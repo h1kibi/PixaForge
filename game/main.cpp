@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     pf::TextureHandle player_texture = renderer.create_debug_texture_16x16();
 
     std::printf("Window and renderer created successfully.\n");
-    std::printf("Milestone 3.5a: Input responsiveness fix.\n");
+    std::printf("Milestone 3.5c: Jump reliability + multi jump.\n");
     std::printf("Entering main loop...\n");
 
     constexpr float fixed_dt = 1.0f / 60.0f;
@@ -92,6 +92,10 @@ int main(int argc, char** argv) {
         }
 
         while (accumulator >= fixed_dt) {
+            // Track grounded state
+            player.was_grounded = player.grounded;
+
+            // Horizontal movement
             const float move_x = input.axis_move_x();
             const float target_vx = move_x * tuning.max_run_speed;
 
@@ -128,8 +132,8 @@ int main(int argc, char** argv) {
                 accel * fixed_dt
             );
 
-            // Jump buffer
-            if (input.pressed(pf::Action::Jump)) {
+            // Jump buffer - use consume_pressed to avoid丢失
+            if (input.consume_pressed(pf::Action::Jump)) {
                 player.jump_buffer_timer = tuning.jump_buffer_time;
             } else {
                 player.jump_buffer_timer -= fixed_dt;
@@ -148,20 +152,34 @@ int main(int argc, char** argv) {
                 }
             }
 
-            // Variable jump height - cut jump short on release
-            if (input.released(pf::Action::Jump) && player.vy < 0.0f) {
-                player.jump_cut = true;
-            }
+            // Determine if we can jump
+            const bool can_ground_jump =
+                player.grounded ||
+                player.coyote_timer > 0.0f;
 
-            // Jump execution
-            const bool can_jump = player.grounded || player.coyote_timer > 0.0f;
+            const bool can_air_jump =
+                !can_ground_jump &&
+                player.jumps_used < tuning.max_jumps;
 
-            if (player.jump_buffer_timer > 0.0f && can_jump) {
-                player.vy = -tuning.jump_speed;
+            // Execute jump
+            if (player.jump_buffer_timer > 0.0f && (can_ground_jump || can_air_jump)) {
+                if (can_ground_jump) {
+                    player.vy = -tuning.jump_speed;
+                    player.jumps_used = 1;
+                } else {
+                    player.vy = -tuning.double_jump_speed;
+                    player.jumps_used += 1;
+                }
+
                 player.grounded = false;
                 player.coyote_timer = 0.0f;
                 player.jump_buffer_timer = 0.0f;
                 player.jump_cut = false;
+            }
+
+            // Variable jump height - use consume_released
+            if (input.consume_released(pf::Action::Jump) && player.vy < 0.0f) {
+                player.jump_cut = true;
             }
 
             // Gravity - stronger when falling or when jump is cut
@@ -181,6 +199,17 @@ int main(int argc, char** argv) {
 
             // Collision
             move_player_with_collision(player, collision_map, fixed_dt);
+
+            // Landing detection and reset
+            player.just_landed = !player.was_grounded && player.grounded;
+
+            if (player.grounded) {
+                player.jumps_used = 0;
+            }
+
+            if (player.just_landed) {
+                player.jump_cut = false;
+            }
 
             accumulator -= fixed_dt;
         }

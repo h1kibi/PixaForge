@@ -13,11 +13,16 @@ struct PlatformerTuning {
 
     // Jump
     float jump_speed = 300.0f;
+    float double_jump_speed = 275.0f;
+
     float gravity_up = 900.0f;
     float gravity_down = 1500.0f;
     float gravity_jump_cut = 2400.0f;
+
     float max_fall_speed = 500.0f;
 
     float coyote_time = 0.12f;
     float jump_buffer_time = 0.15f;
+
+    int max_jumps = 2;
 };

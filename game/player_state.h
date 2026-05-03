@@ -21,6 +21,8 @@ struct PlayerState {
     float coyote_timer = 0.0f;
     float jump_buffer_timer = 0.0f;
 
+    int jumps_used = 0;
+
     pf::Aabb bounds() const {
         return pf::Aabb {
             x,
