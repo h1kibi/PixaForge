@@ -1,6 +1,7 @@
 #pragma once
 
 #include "collision/aabb.h"
+#include "platformer_tuning.h"
 
 struct PlayerState {
     float x = 152.0f;
@@ -12,12 +13,10 @@ struct PlayerState {
     float width = 12.0f;
     float height = 16.0f;
 
-    float move_speed = 85.0f;
-    float jump_speed = 245.0f;
-    float gravity = 780.0f;
-    float max_fall_speed = 360.0f;
-
     bool grounded = false;
+    bool was_grounded = false;
+    bool just_landed = false;
+    bool jump_cut = false;
 
     float coyote_timer = 0.0f;
     float jump_buffer_timer = 0.0f;

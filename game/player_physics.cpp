@@ -3,6 +3,22 @@
 #include <algorithm>
 #include <cmath>
 
+float approach(float current, float target, float max_delta) {
+    if (current < target) {
+        current += max_delta;
+        if (current > target) {
+            current = target;
+        }
+    } else if (current > target) {
+        current -= max_delta;
+        if (current < target) {
+            current = target;
+        }
+    }
+
+    return current;
+}
+
 namespace {
 
 bool overlaps_solid(const pf::Aabb& box, const pf::TileCollisionMap& map) {
@@ -29,6 +45,7 @@ void move_player_with_collision(
     const pf::TileCollisionMap& map,
     float dt
 ) {
+    player.was_grounded = player.grounded;
     player.grounded = false;
 
     // X axis
@@ -60,5 +77,12 @@ void move_player_with_collision(
         }
 
         player.vy = 0.0f;
+    }
+
+    // Landing detection
+    player.just_landed = !player.was_grounded && player.grounded;
+
+    if (player.just_landed) {
+        player.jump_cut = false;
     }
 }

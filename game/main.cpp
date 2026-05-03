@@ -9,6 +9,7 @@
 #include "input/input.h"
 #include "input/sdl_input.h"
 #include "renderer/backends/sdl_renderer_backend.h"
+#include "platformer_tuning.h"
 #include "player_state.h"
 #include "player_physics.h"
 
@@ -49,12 +50,12 @@ int main(int argc, char** argv) {
     pf::TextureHandle player_texture = renderer.create_debug_texture_16x16();
 
     std::printf("Window and renderer created successfully.\n");
-    std::printf("Milestone 3: Platformer feel.\n");
+    std::printf("Milestone 3.5: Platformer feel tuning.\n");
     std::printf("Entering main loop...\n");
 
     constexpr float fixed_dt = 1.0f / 60.0f;
-    constexpr float coyote_time = 0.10f;
-    constexpr float jump_buffer_time = 0.12f;
+
+    PlatformerTuning tuning;
 
     float accumulator = 0.0f;
     std::uint64_t previous_ticks = SDL_GetTicks();
@@ -92,12 +93,27 @@ int main(int argc, char** argv) {
 
         while (accumulator >= fixed_dt) {
             const float move_x = input.axis_move_x();
+            const float target_vx = move_x * tuning.max_run_speed;
 
-            player.vx = move_x * player.move_speed;
+            const bool has_input = move_x != 0.0f;
+
+            float accel = 0.0f;
+
+            if (player.grounded) {
+                accel = has_input ? tuning.ground_accel : tuning.ground_decel;
+            } else {
+                accel = has_input ? tuning.air_accel : tuning.air_decel;
+            }
+
+            player.vx = approach(
+                player.vx,
+                target_vx,
+                accel * fixed_dt
+            );
 
             // Jump buffer
             if (input.pressed(pf::Action::Jump)) {
-                player.jump_buffer_timer = jump_buffer_time;
+                player.jump_buffer_timer = tuning.jump_buffer_time;
             } else {
                 player.jump_buffer_timer -= fixed_dt;
                 if (player.jump_buffer_timer < 0.0f) {
@@ -107,7 +123,7 @@ int main(int argc, char** argv) {
 
             // Coyote time
             if (player.grounded) {
-                player.coyote_timer = coyote_time;
+                player.coyote_timer = tuning.coyote_time;
             } else {
                 player.coyote_timer -= fixed_dt;
                 if (player.coyote_timer < 0.0f) {
@@ -115,21 +131,35 @@ int main(int argc, char** argv) {
                 }
             }
 
+            // Variable jump height - cut jump short on release
+            if (input.released(pf::Action::Jump) && player.vy < 0.0f) {
+                player.jump_cut = true;
+            }
+
             // Jump execution
             const bool can_jump = player.grounded || player.coyote_timer > 0.0f;
 
             if (player.jump_buffer_timer > 0.0f && can_jump) {
-                player.vy = -player.jump_speed;
+                player.vy = -tuning.jump_speed;
                 player.grounded = false;
                 player.coyote_timer = 0.0f;
                 player.jump_buffer_timer = 0.0f;
+                player.jump_cut = false;
             }
 
-            // Gravity
-            player.vy += player.gravity * fixed_dt;
+            // Gravity - stronger when falling or when jump is cut
+            float gravity = tuning.gravity_down;
 
-            if (player.vy > player.max_fall_speed) {
-                player.vy = player.max_fall_speed;
+            if (player.vy < 0.0f) {
+                gravity = player.jump_cut
+                    ? tuning.gravity_jump_cut
+                    : tuning.gravity_up;
+            }
+
+            player.vy += gravity * fixed_dt;
+
+            if (player.vy > tuning.max_fall_speed) {
+                player.vy = tuning.max_fall_speed;
             }
 
             // Collision
