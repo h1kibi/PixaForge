@@ -1,40 +1,30 @@
 #pragma once
 
-#include <array>
+#include <vector>
 
 #include "collision/aabb.h"
+#include "level/level_data.h"
 
 namespace pf {
 
 class TileCollisionMap {
 public:
-    static constexpr int width = 20;
-    static constexpr int height = 12;
-    static constexpr int tile_size = 16;
+    bool load_from_level_collision(const LevelTileCollision& collision);
 
     bool solid_at(int tile_x, int tile_y) const;
     bool solid_at_world(float world_x, float world_y) const;
 
     Aabb tile_bounds(int tile_x, int tile_y) const;
 
-private:
-    std::array<int, width * height> tiles_ = {
-        // 20 x 12
-        // 0 = empty, 1 = solid
+    int width() const { return width_; }
+    int height() const { return height_; }
+    int tile_size() const { return tile_size_; }
 
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,
-        1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    };
+private:
+    int width_ = 0;
+    int height_ = 0;
+    int tile_size_ = 16;
+    std::vector<int> tiles_;
 };
 
 }

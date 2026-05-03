@@ -47,8 +47,10 @@ set(ENGINE_SOURCES
     collision/debug_draw.h
 
     level/level.h
+    level/level_data.h
     level/tilemap.h
     level/ldtk_loader.h
+    level/ldtk_loader.cpp
     level/trigger.h
     level/level_instance.h
 
