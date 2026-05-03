@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "core/version.h"
+#include "renderer/backends/sdl_renderer_backend.h"
 
 int main(int argc, char** argv) {
     (void)argc;
@@ -29,7 +30,18 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::printf("Window created successfully.\n");
+    pf::SdlRendererBackend renderer;
+
+    if (!renderer.initialize(window, 320, 180)) {
+        std::printf("Renderer initialization failed.\n");
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    pf::TextureHandle player_texture = renderer.create_debug_texture_16x16();
+
+    std::printf("Window and renderer created successfully.\n");
     std::printf("Entering main loop...\n");
 
     bool running = true;
@@ -41,12 +53,26 @@ int main(int argc, char** argv) {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             }
+
+            if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) {
+                running = false;
+            }
         }
 
-        SDL_Delay(1);
+        renderer.begin_frame(pf::Color{ 18, 18, 24, 255 });
+
+        renderer.draw_texture(
+            player_texture,
+            pf::Rect{ 0.0f, 0.0f, 16.0f, 16.0f },
+            pf::Rect{ 152.0f, 82.0f, 16.0f, 16.0f }
+        );
+
+        renderer.end_frame();
     }
 
     std::printf("Shutting down...\n");
+
+    renderer.shutdown();
 
     SDL_DestroyWindow(window);
     SDL_Quit();
