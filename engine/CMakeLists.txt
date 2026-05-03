@@ -66,6 +66,7 @@ set(ENGINE_SOURCES
 )
 
 find_package(SDL3 CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 add_library(pixaforge STATIC ${ENGINE_SOURCES})
 
@@ -79,6 +80,7 @@ target_compile_features(pixaforge PUBLIC cxx_std_20)
 target_link_libraries(pixaforge
     PUBLIC
         SDL3::SDL3
+        nlohmann_json::nlohmann_json
 )
 
 target_compile_definitions(pixaforge
