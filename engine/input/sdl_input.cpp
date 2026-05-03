@@ -24,6 +24,10 @@ bool is_quit_key(SDL_Scancode scancode) {
     return scancode == SDL_SCANCODE_ESCAPE;
 }
 
+bool is_reload_key(SDL_Scancode scancode) {
+    return scancode == SDL_SCANCODE_R;
+}
+
 }
 
 void handle_sdl_input_event(Input& input, const SDL_Event& event) {
@@ -43,6 +47,8 @@ void handle_sdl_input_event(Input& input, const SDL_Event& event) {
         } else if (is_quit_key(scancode)) {
             input.press_action(Action::Quit);
             input.press_action(Action::Pause);
+        } else if (is_reload_key(scancode)) {
+            input.press_action(Action::Reload);
         }
     }
 
@@ -58,6 +64,8 @@ void handle_sdl_input_event(Input& input, const SDL_Event& event) {
         } else if (is_quit_key(scancode)) {
             input.release_action(Action::Quit);
             input.release_action(Action::Pause);
+        } else if (is_reload_key(scancode)) {
+            input.release_action(Action::Reload);
         }
     }
 }

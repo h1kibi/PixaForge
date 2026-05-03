@@ -11,7 +11,7 @@ bool LdtkLoader::load_project(const std::string& path, LevelData& out_level) {
     std::ifstream file(path);
 
     if (!file.is_open()) {
-        std::cout << "Failed to open LDtk file: " << path << "\n";
+        std::printf("Failed to open LDtk file: %s\n", path.c_str());
         return false;
     }
 
@@ -20,12 +20,12 @@ bool LdtkLoader::load_project(const std::string& path, LevelData& out_level) {
     try {
         file >> root;
     } catch (const std::exception& e) {
-        std::cout << "Failed to parse LDtk JSON: " << e.what() << "\n";
+        std::printf("Failed to parse LDtk JSON: %s\n", e.what());
         return false;
     }
 
     if (!root.contains("levels") || !root["levels"].is_array() || root["levels"].empty()) {
-        std::cout << "LDtk file has no levels.\n";
+        std::printf("LDtk file has no levels.\n");
         return false;
     }
 
@@ -34,8 +34,14 @@ bool LdtkLoader::load_project(const std::string& path, LevelData& out_level) {
     out_level.pixel_width = level.value("pxWid", 0);
     out_level.pixel_height = level.value("pxHei", 0);
 
+    // Reset data
+    out_level.checkpoints.clear();
+    out_level.hazards.clear();
+    out_level.goals.clear();
+    out_level.has_player_spawn = false;
+
     if (!level.contains("layerInstances") || !level["layerInstances"].is_array()) {
-        std::cout << "Level has no layer instances.\n";
+        std::printf("Level has no layer instances.\n");
         return false;
     }
 
@@ -62,6 +68,8 @@ bool LdtkLoader::load_project(const std::string& path, LevelData& out_level) {
                     out_level.collision.solid[i] = csv[i].get<int>() != 0 ? 1 : 0;
                 }
             }
+
+            std::printf("  Collision: %dx%d (tile %d)\n", cell_width, cell_height, grid_size);
         }
 
         // Parse Entities
@@ -70,23 +78,47 @@ bool LdtkLoader::load_project(const std::string& path, LevelData& out_level) {
 
             for (const auto& entity : entities) {
                 const std::string entity_id = entity.value("__identifier", "");
+                const auto& px = entity["px"];
 
                 if (entity_id == "PlayerSpawn") {
-                    const auto& px = entity["px"];
-
                     out_level.player_spawn.x = px[0].get<float>();
                     out_level.player_spawn.y = px[1].get<float>();
                     out_level.has_player_spawn = true;
+                    std::printf("  PlayerSpawn: (%.0f, %.0f)\n",
+                        out_level.player_spawn.x, out_level.player_spawn.y);
+                }
+                else if (entity_id == "Checkpoint") {
+                    LevelCheckpoint cp;
+                    cp.x = px[0].get<float>();
+                    cp.y = px[1].get<float>();
+                    out_level.checkpoints.push_back(cp);
+                    std::printf("  Checkpoint: (%.0f, %.0f)\n", cp.x, cp.y);
+                }
+                else if (entity_id == "Hazard") {
+                    LevelHazard hazard;
+                    hazard.bounds.x = px[0].get<float>();
+                    hazard.bounds.y = px[1].get<float>();
+                    hazard.bounds.w = entity.value("width", 16.0f);
+                    hazard.bounds.h = entity.value("height", 16.0f);
+                    out_level.hazards.push_back(hazard);
+                    std::printf("  Hazard: (%.0f, %.0f) %.0fx%.0f\n",
+                        hazard.bounds.x, hazard.bounds.y, hazard.bounds.w, hazard.bounds.h);
+                }
+                else if (entity_id == "Goal") {
+                    LevelGoal goal;
+                    goal.bounds.x = px[0].get<float>();
+                    goal.bounds.y = px[1].get<float>();
+                    goal.bounds.w = entity.value("width", 16.0f);
+                    goal.bounds.h = entity.value("height", 16.0f);
+                    out_level.goals.push_back(goal);
+                    std::printf("  Goal: (%.0f, %.0f) %.0fx%.0f\n",
+                        goal.bounds.x, goal.bounds.y, goal.bounds.w, goal.bounds.h);
                 }
             }
         }
     }
 
-    std::printf("LDtk loaded: %dx%d, collision: %dx%d, spawn: %s\n",
-        out_level.pixel_width, out_level.pixel_height,
-        out_level.collision.width, out_level.collision.height,
-        out_level.has_player_spawn ? "yes" : "no");
-
+    std::printf("LDtk loaded: %dx%d\n", out_level.pixel_width, out_level.pixel_height);
     return true;
 }
 

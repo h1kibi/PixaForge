@@ -12,6 +12,7 @@ enum class Action : std::uint8_t {
     Dash,
     Pause,
     Quit,
+    Reload,
 
     Count
 };
