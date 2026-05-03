@@ -5,15 +5,12 @@
 #include <cstdio>
 
 #include "core/version.h"
+#include "collision/tile_collision.h"
 #include "input/input.h"
 #include "input/sdl_input.h"
 #include "renderer/backends/sdl_renderer_backend.h"
-
-struct PlayerState {
-    float x = 152.0f;
-    float y = 82.0f;
-    float speed = 80.0f;
-};
+#include "player_state.h"
+#include "player_physics.h"
 
 int main(int argc, char** argv) {
     (void)argc;
@@ -52,15 +49,18 @@ int main(int argc, char** argv) {
     pf::TextureHandle player_texture = renderer.create_debug_texture_16x16();
 
     std::printf("Window and renderer created successfully.\n");
-    std::printf("Milestone 2: Input and movement.\n");
+    std::printf("Milestone 3: Platformer feel.\n");
     std::printf("Entering main loop...\n");
 
     constexpr float fixed_dt = 1.0f / 60.0f;
+    constexpr float coyote_time = 0.10f;
+    constexpr float jump_buffer_time = 0.12f;
 
     float accumulator = 0.0f;
     std::uint64_t previous_ticks = SDL_GetTicks();
 
     pf::Input input;
+    pf::TileCollisionMap collision_map;
     PlayerState player;
     bool running = true;
 
@@ -92,16 +92,78 @@ int main(int argc, char** argv) {
 
         while (accumulator >= fixed_dt) {
             const float move_x = input.axis_move_x();
-            player.x += move_x * player.speed * fixed_dt;
+
+            player.vx = move_x * player.move_speed;
+
+            // Jump buffer
+            if (input.pressed(pf::Action::Jump)) {
+                player.jump_buffer_timer = jump_buffer_time;
+            } else {
+                player.jump_buffer_timer -= fixed_dt;
+                if (player.jump_buffer_timer < 0.0f) {
+                    player.jump_buffer_timer = 0.0f;
+                }
+            }
+
+            // Coyote time
+            if (player.grounded) {
+                player.coyote_timer = coyote_time;
+            } else {
+                player.coyote_timer -= fixed_dt;
+                if (player.coyote_timer < 0.0f) {
+                    player.coyote_timer = 0.0f;
+                }
+            }
+
+            // Jump execution
+            const bool can_jump = player.grounded || player.coyote_timer > 0.0f;
+
+            if (player.jump_buffer_timer > 0.0f && can_jump) {
+                player.vy = -player.jump_speed;
+                player.grounded = false;
+                player.coyote_timer = 0.0f;
+                player.jump_buffer_timer = 0.0f;
+            }
+
+            // Gravity
+            player.vy += player.gravity * fixed_dt;
+
+            if (player.vy > player.max_fall_speed) {
+                player.vy = player.max_fall_speed;
+            }
+
+            // Collision
+            move_player_with_collision(player, collision_map, fixed_dt);
 
             accumulator -= fixed_dt;
         }
 
-        const float render_x = std::round(player.x);
+        // Render
+        const float render_x = std::round(player.x - 2.0f);
         const float render_y = std::round(player.y);
 
         renderer.begin_frame(pf::Color{18, 18, 24, 255});
 
+        // Draw collision tiles
+        for (int y = 0; y < pf::TileCollisionMap::height; ++y) {
+            for (int x = 0; x < pf::TileCollisionMap::width; ++x) {
+                if (!collision_map.solid_at(x, y)) {
+                    continue;
+                }
+
+                renderer.draw_rect(
+                    pf::Rect {
+                        static_cast<float>(x * pf::TileCollisionMap::tile_size),
+                        static_cast<float>(y * pf::TileCollisionMap::tile_size),
+                        static_cast<float>(pf::TileCollisionMap::tile_size),
+                        static_cast<float>(pf::TileCollisionMap::tile_size)
+                    },
+                    pf::Color { 48, 54, 72, 255 }
+                );
+            }
+        }
+
+        // Draw player
         renderer.draw_texture(
             player_texture,
             pf::Rect{0.0f, 0.0f, 16.0f, 16.0f},
