@@ -5,5 +5,5 @@ add_executable(level_preview
     main.cpp
 )
 
-target_link_libraries(level_preview PRIVATE engine)
+target_link_libraries(level_preview PRIVATE pixaforge)
 target_include_directories(level_preview PRIVATE ${CMAKE_SOURCE_DIR}/engine)
