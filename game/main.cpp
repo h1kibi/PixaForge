@@ -99,14 +99,15 @@ int main(int argc, char** argv) {
 
     pf::Input input;
     PlayerState player;
-    pf::LevelSpawnPoint current_spawn = level.player_spawn;
+    float spawn_x = level.player_spawn.x;
+    float spawn_y = level.player_spawn.y;
     bool level_complete = false;
     bool running = true;
 
     // Set spawn from LDtk
     if (level.has_player_spawn) {
-        player.x = level.player_spawn.x;
-        player.y = level.player_spawn.y;
+        player.x = spawn_x;
+        player.y = spawn_y;
     }
 
     while (running) {
@@ -140,9 +141,10 @@ int main(int argc, char** argv) {
             std::printf("Reloading level...\n");
 
             if (load_level(level_path, level, collision_map)) {
-                current_spawn = level.player_spawn;
-                player.x = current_spawn.x;
-                player.y = current_spawn.y;
+                spawn_x = level.player_spawn.x;
+                spawn_y = level.player_spawn.y;
+                player.x = spawn_x;
+                player.y = spawn_y;
                 player.vx = 0.0f;
                 player.vy = 0.0f;
                 level_complete = false;
@@ -281,15 +283,16 @@ int main(int argc, char** argv) {
                 const pf::Aabb cp_bounds = {cp.x, cp.y, 16.0f, 16.0f};
 
                 if (overlaps(player.bounds(), cp_bounds)) {
-                    current_spawn = cp;
+                    spawn_x = cp.x;
+                    spawn_y = cp.y;
                 }
             }
 
             // Hazard collision
             for (const auto& hazard : level.hazards) {
                 if (overlaps_rect(player.bounds(), hazard.bounds)) {
-                    player.x = current_spawn.x;
-                    player.y = current_spawn.y;
+                    player.x = spawn_x;
+                    player.y = spawn_y;
                     player.vx = 0.0f;
                     player.vy = 0.0f;
                     player.grounded = false;
@@ -348,7 +351,7 @@ int main(int argc, char** argv) {
         // Draw hazards
         for (const auto& hazard : level.hazards) {
             renderer.draw_rect(
-                hazard.bounds,
+                pf::Rect{hazard.bounds.x, hazard.bounds.y, hazard.bounds.w, hazard.bounds.h},
                 pf::Color{200, 50, 50, 255}
             );
         }
@@ -356,7 +359,7 @@ int main(int argc, char** argv) {
         // Draw goals
         for (const auto& goal : level.goals) {
             renderer.draw_rect(
-                goal.bounds,
+                pf::Rect{goal.bounds.x, goal.bounds.y, goal.bounds.w, goal.bounds.h},
                 pf::Color{255, 215, 0, 255}
             );
         }
