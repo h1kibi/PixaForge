@@ -24,8 +24,11 @@ set(ENGINE_SOURCES
     renderer/backends/sdl_renderer_backend.h
     renderer/backends/sdl_renderer_backend.cpp
 
-    input/input.h
     input/action.h
+    input/input.h
+    input/input.cpp
+    input/sdl_input.h
+    input/sdl_input.cpp
     input/input_map.h
     input/input_buffer.h
 
