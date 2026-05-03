@@ -97,6 +97,25 @@ void SdlRendererBackend::draw_texture(TextureHandle texture, const Rect& src, co
     SDL_RenderTexture(renderer_, sdl_texture, &sdl_src, &sdl_dst);
 }
 
+void SdlRendererBackend::draw_rect(const Rect& rect, Color color) {
+    SDL_SetRenderDrawColor(
+        renderer_,
+        color.r,
+        color.g,
+        color.b,
+        color.a
+    );
+
+    SDL_FRect sdl_rect {
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h
+    };
+
+    SDL_RenderFillRect(renderer_, &sdl_rect);
+}
+
 void SdlRendererBackend::end_frame() {
     SDL_SetRenderTarget(renderer_, nullptr);
 

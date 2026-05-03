@@ -14,6 +14,7 @@ public:
 
     void begin_frame(Color clear_color) override;
     void draw_texture(TextureHandle texture, const Rect& src, const Rect& dst) override;
+    void draw_rect(const Rect& rect, Color color) override;
     void end_frame() override;
 
     TextureHandle create_debug_texture_16x16() override;

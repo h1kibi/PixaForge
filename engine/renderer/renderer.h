@@ -21,6 +21,7 @@ public:
 
     virtual void begin_frame(Color clear_color) = 0;
     virtual void draw_texture(TextureHandle texture, const Rect& src, const Rect& dst) = 0;
+    virtual void draw_rect(const Rect& rect, Color color) = 0;
     virtual void end_frame() = 0;
 
     virtual TextureHandle create_debug_texture_16x16() = 0;
