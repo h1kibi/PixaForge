@@ -79,7 +79,7 @@ cmake --build .
 - [x] Milestone 3: 平台跳跃手感
 - [x] Milestone 3.5: 手感调校
 - [x] Milestone 4: LDtk 关卡
-- [ ] Milestone 4.5: LDtk 关卡迭代
+- [x] Milestone 4.5: LDtk 关卡迭代
 - [ ] Milestone 5: 完整一关 demo
 
 ## 许可证
