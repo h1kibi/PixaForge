@@ -15,7 +15,14 @@ void Input::set_action(Action action, bool down) {
 }
 
 void Input::press_action(Action action) {
-    current_[static_cast<std::uint32_t>(action)] = true;
+    const auto index = static_cast<std::uint32_t>(action);
+
+    const bool was_down = current_[index];
+    current_[index] = true;
+
+    if (!was_down) {
+        pressed_latched_[index] = true;
+    }
 
     if (action == Action::MoveLeft) {
         horizontal_priority_ = -1;
@@ -25,7 +32,14 @@ void Input::press_action(Action action) {
 }
 
 void Input::release_action(Action action) {
-    current_[static_cast<std::uint32_t>(action)] = false;
+    const auto index = static_cast<std::uint32_t>(action);
+
+    const bool was_down = current_[index];
+    current_[index] = false;
+
+    if (was_down) {
+        released_latched_[index] = true;
+    }
 
     if (action == Action::MoveLeft && horizontal_priority_ == -1) {
         horizontal_priority_ = down(Action::MoveRight) ? 1 : 0;
@@ -46,6 +60,28 @@ bool Input::pressed(Action action) const {
 bool Input::released(Action action) const {
     const auto index = static_cast<std::uint32_t>(action);
     return !current_[index] && previous_[index];
+}
+
+bool Input::consume_pressed(Action action) {
+    const auto index = static_cast<std::uint32_t>(action);
+
+    if (!pressed_latched_[index]) {
+        return false;
+    }
+
+    pressed_latched_[index] = false;
+    return true;
+}
+
+bool Input::consume_released(Action action) {
+    const auto index = static_cast<std::uint32_t>(action);
+
+    if (!released_latched_[index]) {
+        return false;
+    }
+
+    released_latched_[index] = false;
+    return true;
 }
 
 float Input::axis_move_x() const {
