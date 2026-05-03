@@ -77,7 +77,7 @@ cmake --build .
 - [x] Milestone 1: 渲染一个角色
 - [x] Milestone 2: 输入和移动
 - [x] Milestone 3: 平台跳跃手感
-- [ ] Milestone 3.5: 手感调校
+- [x] Milestone 3.5: 手感调校
 - [ ] Milestone 4: LDtk 关卡
 - [ ] Milestone 5: 完整一关 demo
 
