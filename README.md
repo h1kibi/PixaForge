@@ -73,7 +73,7 @@ cmake --build .
 ## 开发路线
 
 - [x] 项目结构
-- [ ] Milestone 0: 窗口和主循环
+- [x] Milestone 0: 窗口和主循环
 - [ ] Milestone 1: 渲染一个角色
 - [ ] Milestone 2: 输入和移动
 - [ ] Milestone 3: 平台跳跃手感
