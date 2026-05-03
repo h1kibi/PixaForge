@@ -13,13 +13,16 @@ set(ENGINE_SOURCES
     platform/filesystem.h
     platform/gamepad.h
 
+    renderer/color.h
+    renderer/texture.h
     renderer/renderer.h
     renderer/graphics_device.h
-    renderer/texture.h
     renderer/sprite_batch.h
     renderer/tilemap_renderer.h
     renderer/camera.h
     renderer/pixel_scaler.h
+    renderer/backends/sdl_renderer_backend.h
+    renderer/backends/sdl_renderer_backend.cpp
 
     input/input.h
     input/action.h
@@ -58,6 +61,8 @@ set(ENGINE_SOURCES
     online/null_online_service.h
 )
 
+find_package(SDL3 CONFIG REQUIRED)
+
 add_library(pixaforge STATIC ${ENGINE_SOURCES})
 
 target_include_directories(pixaforge
@@ -66,6 +71,11 @@ target_include_directories(pixaforge
 )
 
 target_compile_features(pixaforge PUBLIC cxx_std_20)
+
+target_link_libraries(pixaforge
+    PUBLIC
+        SDL3::SDL3
+)
 
 target_compile_definitions(pixaforge
     PUBLIC

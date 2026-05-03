@@ -1,11 +1,8 @@
-find_package(SDL3 CONFIG REQUIRED)
-
 add_executable(game main.cpp)
 
 target_link_libraries(game
     PRIVATE
         pixaforge
-        SDL3::SDL3
 )
 
 set_target_properties(game PROPERTIES
