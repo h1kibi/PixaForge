@@ -1,33 +1,65 @@
 #include "input/sdl_input.h"
 
-#include <SDL3/SDL.h>
-
 namespace pf {
 
-void update_input_from_sdl_keyboard(Input& input) {
-    const bool* keys = SDL_GetKeyboardState(nullptr);
+namespace {
 
-    const bool move_left =
-        keys[SDL_SCANCODE_A] ||
-        keys[SDL_SCANCODE_LEFT];
+bool is_left_key(SDL_Scancode scancode) {
+    return scancode == SDL_SCANCODE_A ||
+           scancode == SDL_SCANCODE_LEFT;
+}
 
-    const bool move_right =
-        keys[SDL_SCANCODE_D] ||
-        keys[SDL_SCANCODE_RIGHT];
+bool is_right_key(SDL_Scancode scancode) {
+    return scancode == SDL_SCANCODE_D ||
+           scancode == SDL_SCANCODE_RIGHT;
+}
 
-    const bool jump =
-        keys[SDL_SCANCODE_SPACE] ||
-        keys[SDL_SCANCODE_W] ||
-        keys[SDL_SCANCODE_UP];
+bool is_jump_key(SDL_Scancode scancode) {
+    return scancode == SDL_SCANCODE_SPACE ||
+           scancode == SDL_SCANCODE_W ||
+           scancode == SDL_SCANCODE_UP;
+}
 
-    const bool pause =
-        keys[SDL_SCANCODE_ESCAPE];
+bool is_quit_key(SDL_Scancode scancode) {
+    return scancode == SDL_SCANCODE_ESCAPE;
+}
 
-    input.set_action(Action::MoveLeft, move_left);
-    input.set_action(Action::MoveRight, move_right);
-    input.set_action(Action::Jump, jump);
-    input.set_action(Action::Pause, pause);
-    input.set_action(Action::Quit, pause);
+}
+
+void handle_sdl_input_event(Input& input, const SDL_Event& event) {
+    if (event.type == SDL_EVENT_KEY_DOWN) {
+        if (event.key.repeat) {
+            return;
+        }
+
+        const SDL_Scancode scancode = event.key.scancode;
+
+        if (is_left_key(scancode)) {
+            input.press_action(Action::MoveLeft);
+        } else if (is_right_key(scancode)) {
+            input.press_action(Action::MoveRight);
+        } else if (is_jump_key(scancode)) {
+            input.press_action(Action::Jump);
+        } else if (is_quit_key(scancode)) {
+            input.press_action(Action::Quit);
+            input.press_action(Action::Pause);
+        }
+    }
+
+    if (event.type == SDL_EVENT_KEY_UP) {
+        const SDL_Scancode scancode = event.key.scancode;
+
+        if (is_left_key(scancode)) {
+            input.release_action(Action::MoveLeft);
+        } else if (is_right_key(scancode)) {
+            input.release_action(Action::MoveRight);
+        } else if (is_jump_key(scancode)) {
+            input.release_action(Action::Jump);
+        } else if (is_quit_key(scancode)) {
+            input.release_action(Action::Quit);
+            input.release_action(Action::Pause);
+        }
+    }
 }
 
 }
