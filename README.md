@@ -74,8 +74,8 @@ cmake --build .
 
 - [x] 项目结构
 - [x] Milestone 0: 窗口和主循环
-- [ ] Milestone 1: 渲染一个角色
-- [ ] Milestone 2: 输入和移动
+- [x] Milestone 1: 渲染一个角色
+- [x] Milestone 2: 输入和移动
 - [ ] Milestone 3: 平台跳跃手感
 - [ ] Milestone 4: LDtk 关卡
 - [ ] Milestone 5: 完整一关 demo
