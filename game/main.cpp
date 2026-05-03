@@ -8,12 +8,11 @@
 #include "collision/tile_collision.h"
 #include "input/input.h"
 #include "input/sdl_input.h"
-#include "level/ldtk_loader.h"
-#include "level/level_data.h"
 #include "renderer/backends/sdl_renderer_backend.h"
 #include "platformer_tuning.h"
 #include "player_state.h"
 #include "player_physics.h"
+#include "game_state.h"
 
 namespace {
 
@@ -24,16 +23,23 @@ bool overlaps_rect(const pf::Aabb& box, const pf::LevelRect& rect) {
            box.bottom() > rect.y;
 }
 
-bool load_level(const std::string& path, pf::LevelData& level, pf::TileCollisionMap& collision_map) {
-    pf::LdtkLoader loader;
+bool overlaps_aabb(const pf::Aabb& a, const pf::Aabb& b) {
+    return a.left() < b.right() &&
+           a.right() > b.left() &&
+           a.top() < b.bottom() &&
+           a.bottom() > b.top();
+}
 
-    if (!loader.load_project(path, level)) {
-        std::printf("Failed to load level: %s\n", path.c_str());
-        return false;
+void update_window_title(SDL_Window* window, const GameState& state, int checkpoint) {
+    if (state.level_complete) {
+        SDL_SetWindowTitle(window, "PixaForge - Level Complete!");
+    } else if (checkpoint >= 0) {
+        char title[64];
+        std::snprintf(title, sizeof(title), "PixaForge - Checkpoint %d", checkpoint + 1);
+        SDL_SetWindowTitle(window, title);
+    } else {
+        SDL_SetWindowTitle(window, "PixaForge - Playing");
     }
-
-    collision_map.load_from_level_collision(level.collision);
-    return true;
 }
 
 }
@@ -74,41 +80,31 @@ int main(int argc, char** argv) {
 
     pf::TextureHandle player_texture = renderer.create_debug_texture_16x16();
 
-    // Load LDtk level
-    pf::LevelData level;
-    pf::TileCollisionMap collision_map;
+    // Load level
+    GameState state;
     const std::string level_path = "assets_raw/levels/test_platformer.ldtk";
 
-    if (!load_level(level_path, level, collision_map)) {
+    if (!load_level_runtime(level_path, state)) {
         renderer.shutdown();
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
     }
 
-    std::printf("Milestone 4.5: LDtk level iteration.\n");
+    std::printf("Milestone 5: Playable demo.\n");
     std::printf("Controls: A/D/Arrows=Move, Space/W/Up=Jump, R=Reload, ESC=Quit\n");
     std::printf("Entering main loop...\n");
 
     constexpr float fixed_dt = 1.0f / 60.0f;
-
     PlatformerTuning tuning;
 
     float accumulator = 0.0f;
     std::uint64_t previous_ticks = SDL_GetTicks();
 
     pf::Input input;
-    PlayerState player;
-    float spawn_x = level.player_spawn.x;
-    float spawn_y = level.player_spawn.y;
-    bool level_complete = false;
     bool running = true;
 
-    // Set spawn from LDtk
-    if (level.has_player_spawn) {
-        player.x = spawn_x;
-        player.y = spawn_y;
-    }
+    update_window_title(window, state, state.checkpoint_index);
 
     while (running) {
         std::uint64_t current_ticks = SDL_GetTicks();
@@ -139,25 +135,17 @@ int main(int argc, char** argv) {
         // Reload level
         if (input.consume_pressed(pf::Action::Reload)) {
             std::printf("Reloading level...\n");
-
-            if (load_level(level_path, level, collision_map)) {
-                spawn_x = level.player_spawn.x;
-                spawn_y = level.player_spawn.y;
-                player.x = spawn_x;
-                player.y = spawn_y;
-                player.vx = 0.0f;
-                player.vy = 0.0f;
-                level_complete = false;
-                SDL_SetWindowTitle(window, "PixaForge");
-                std::printf("Level reloaded.\n");
-            }
+            load_level_runtime(level_path, state);
+            update_window_title(window, state, state.checkpoint_index);
         }
 
         while (accumulator >= fixed_dt) {
-            if (level_complete) {
+            if (state.level_complete) {
                 accumulator -= fixed_dt;
                 continue;
             }
+
+            PlayerState& player = state.player;
 
             // Track grounded state
             player.was_grounded = player.grounded;
@@ -265,7 +253,7 @@ int main(int argc, char** argv) {
             }
 
             // Collision
-            move_player_with_collision(player, collision_map, fixed_dt);
+            move_player_with_collision(player, state.collision_map, fixed_dt);
 
             // Landing detection and reset
             player.just_landed = !player.was_grounded && player.grounded;
@@ -278,35 +266,65 @@ int main(int argc, char** argv) {
                 player.jump_cut = false;
             }
 
+            // Update enemies
+            for (auto& enemy : state.enemies) {
+                enemy.x += enemy.vx * fixed_dt;
+
+                if (enemy.x > enemy.start_x + enemy.patrol_distance) {
+                    enemy.x = enemy.start_x + enemy.patrol_distance;
+                    enemy.vx = -enemy.vx;
+                } else if (enemy.x < enemy.start_x) {
+                    enemy.x = enemy.start_x;
+                    enemy.vx = -enemy.vx;
+                }
+            }
+
             // Checkpoint activation
-            for (const auto& cp : level.checkpoints) {
+            for (size_t i = 0; i < state.level.checkpoints.size(); ++i) {
+                const auto& cp = state.level.checkpoints[i];
                 const pf::Aabb cp_bounds = {cp.x, cp.y, 16.0f, 16.0f};
 
-                if (overlaps(player.bounds(), cp_bounds)) {
-                    spawn_x = cp.x;
-                    spawn_y = cp.y;
+                if (overlaps_aabb(player.bounds(), cp_bounds)) {
+                    if (state.checkpoint_index != static_cast<int>(i)) {
+                        state.checkpoint_index = static_cast<int>(i);
+                        state.spawn_x = cp.x;
+                        state.spawn_y = cp.y;
+                        update_window_title(window, state, state.checkpoint_index);
+                        std::printf("Checkpoint %d activated!\n", state.checkpoint_index + 1);
+                    }
                 }
             }
 
             // Hazard collision
-            for (const auto& hazard : level.hazards) {
+            bool hit_hazard = false;
+            for (const auto& hazard : state.level.hazards) {
                 if (overlaps_rect(player.bounds(), hazard.bounds)) {
-                    player.x = spawn_x;
-                    player.y = spawn_y;
-                    player.vx = 0.0f;
-                    player.vy = 0.0f;
-                    player.grounded = false;
-                    player.jumps_used = 0;
-                    std::printf("Hit hazard! Respawned.\n");
+                    hit_hazard = true;
                     break;
                 }
             }
 
+            // Enemy collision
+            if (!hit_hazard) {
+                for (const auto& enemy : state.enemies) {
+                    if (overlaps_aabb(player.bounds(), enemy.bounds())) {
+                        hit_hazard = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hit_hazard) {
+                reset_player_to_spawn(state);
+                std::printf("Hit hazard! Respawned.\n");
+            }
+
             // Goal collision
-            for (const auto& goal : level.goals) {
+            for (const auto& goal : state.level.goals) {
                 if (overlaps_rect(player.bounds(), goal.bounds)) {
-                    level_complete = true;
-                    SDL_SetWindowTitle(window, "PixaForge - Level Complete!");
+                    state.level_complete = true;
+                    state.mode = GameMode::LevelComplete;
+                    update_window_title(window, state, state.checkpoint_index);
                     std::printf("Level complete!\n");
                     break;
                 }
@@ -316,24 +334,25 @@ int main(int argc, char** argv) {
         }
 
         // Render
+        const PlayerState& player = state.player;
         const float render_x = std::round(player.x - 2.0f);
         const float render_y = std::round(player.y);
 
         renderer.begin_frame(pf::Color{18, 18, 24, 255});
 
         // Draw collision tiles
-        for (int y = 0; y < collision_map.height(); ++y) {
-            for (int x = 0; x < collision_map.width(); ++x) {
-                if (!collision_map.solid_at(x, y)) {
+        for (int y = 0; y < state.collision_map.height(); ++y) {
+            for (int x = 0; x < state.collision_map.width(); ++x) {
+                if (!state.collision_map.solid_at(x, y)) {
                     continue;
                 }
 
                 renderer.draw_rect(
                     pf::Rect {
-                        static_cast<float>(x * collision_map.tile_size()),
-                        static_cast<float>(y * collision_map.tile_size()),
-                        static_cast<float>(collision_map.tile_size()),
-                        static_cast<float>(collision_map.tile_size())
+                        static_cast<float>(x * state.collision_map.tile_size()),
+                        static_cast<float>(y * state.collision_map.tile_size()),
+                        static_cast<float>(state.collision_map.tile_size()),
+                        static_cast<float>(state.collision_map.tile_size())
                     },
                     pf::Color { 48, 54, 72, 255 }
                 );
@@ -341,7 +360,7 @@ int main(int argc, char** argv) {
         }
 
         // Draw checkpoints
-        for (const auto& cp : level.checkpoints) {
+        for (const auto& cp : state.level.checkpoints) {
             renderer.draw_rect(
                 pf::Rect{cp.x, cp.y, 16.0f, 16.0f},
                 pf::Color{0, 200, 100, 255}
@@ -349,7 +368,7 @@ int main(int argc, char** argv) {
         }
 
         // Draw hazards
-        for (const auto& hazard : level.hazards) {
+        for (const auto& hazard : state.level.hazards) {
             renderer.draw_rect(
                 pf::Rect{hazard.bounds.x, hazard.bounds.y, hazard.bounds.w, hazard.bounds.h},
                 pf::Color{200, 50, 50, 255}
@@ -357,10 +376,18 @@ int main(int argc, char** argv) {
         }
 
         // Draw goals
-        for (const auto& goal : level.goals) {
+        for (const auto& goal : state.level.goals) {
             renderer.draw_rect(
                 pf::Rect{goal.bounds.x, goal.bounds.y, goal.bounds.w, goal.bounds.h},
                 pf::Color{255, 215, 0, 255}
+            );
+        }
+
+        // Draw enemies
+        for (const auto& enemy : state.enemies) {
+            renderer.draw_rect(
+                pf::Rect{enemy.x, enemy.y, enemy.width, enemy.height},
+                pf::Color{200, 100, 255, 255}
             );
         }
 

@@ -36,6 +36,15 @@ struct LevelGoal {
     LevelRect bounds;
 };
 
+struct LevelEnemy {
+    float x = 0.0f;
+    float y = 0.0f;
+    float patrol_distance = 48.0f;
+    float speed = 30.0f;
+    float width = 16.0f;
+    float height = 16.0f;
+};
+
 struct LevelData {
     int pixel_width = 0;
     int pixel_height = 0;
@@ -48,6 +57,7 @@ struct LevelData {
     std::vector<LevelCheckpoint> checkpoints;
     std::vector<LevelHazard> hazards;
     std::vector<LevelGoal> goals;
+    std::vector<LevelEnemy> enemies;
 };
 
 }

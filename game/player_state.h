@@ -32,3 +32,22 @@ struct PlayerState {
         };
     }
 };
+
+struct EnemyState {
+    float x = 0.0f;
+    float y = 0.0f;
+    float vx = 30.0f;
+    float start_x = 0.0f;
+    float patrol_distance = 48.0f;
+    float width = 16.0f;
+    float height = 16.0f;
+
+    pf::Aabb bounds() const {
+        return pf::Aabb {
+            x,
+            y,
+            width,
+            height
+        };
+    }
+};

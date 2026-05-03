@@ -1,5 +1,7 @@
 add_executable(game
     main.cpp
+    game_state.h
+    game_state.cpp
     player_state.h
     player_physics.h
     player_physics.cpp

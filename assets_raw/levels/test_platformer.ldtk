@@ -65,6 +65,22 @@
               "fieldInstances": []
             },
             {
+              "__identifier": "Hazard",
+              "__grid": [10, 10],
+              "px": [168, 168],
+              "width": 32,
+              "height": 16,
+              "fieldInstances": []
+            },
+            {
+              "__identifier": "EnemyPatrol",
+              "__grid": [6, 7],
+              "px": [104, 120],
+              "width": 16,
+              "height": 16,
+              "fieldInstances": []
+            },
+            {
               "__identifier": "Goal",
               "__grid": [17, 5],
               "px": [280, 88],

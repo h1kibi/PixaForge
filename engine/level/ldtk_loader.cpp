@@ -114,6 +114,17 @@ bool LdtkLoader::load_project(const std::string& path, LevelData& out_level) {
                     std::printf("  Goal: (%.0f, %.0f) %.0fx%.0f\n",
                         goal.bounds.x, goal.bounds.y, goal.bounds.w, goal.bounds.h);
                 }
+                else if (entity_id == "EnemyPatrol") {
+                    LevelEnemy enemy;
+                    enemy.x = px[0].get<float>();
+                    enemy.y = px[1].get<float>();
+                    enemy.width = entity.value("width", 16.0f);
+                    enemy.height = entity.value("height", 16.0f);
+                    enemy.patrol_distance = 48.0f;
+                    enemy.speed = 30.0f;
+                    out_level.enemies.push_back(enemy);
+                    std::printf("  EnemyPatrol: (%.0f, %.0f)\n", enemy.x, enemy.y);
+                }
             }
         }
     }
