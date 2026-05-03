@@ -1,4 +1,9 @@
-add_executable(game main.cpp)
+add_executable(game
+    main.cpp
+    player_state.h
+    player_physics.h
+    player_physics.cpp
+)
 
 target_link_libraries(game
     PRIVATE

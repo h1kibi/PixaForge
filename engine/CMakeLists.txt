@@ -42,6 +42,7 @@ set(ENGINE_SOURCES
 
     collision/aabb.h
     collision/tile_collision.h
+    collision/tile_collision.cpp
     collision/collision_world.h
     collision/debug_draw.h
 
