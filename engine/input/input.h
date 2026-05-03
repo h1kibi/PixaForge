@@ -12,6 +12,9 @@ public:
 
     void set_action(Action action, bool down);
 
+    void press_action(Action action);
+    void release_action(Action action);
+
     bool down(Action action) const;
     bool pressed(Action action) const;
     bool released(Action action) const;
@@ -21,6 +24,9 @@ public:
 private:
     std::array<bool, action_count()> current_{};
     std::array<bool, action_count()> previous_{};
+
+    // -1 = left, 0 = none, 1 = right
+    int horizontal_priority_ = 0;
 };
 
 }

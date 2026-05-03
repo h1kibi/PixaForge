@@ -7,7 +7,31 @@ void Input::begin_frame() {
 }
 
 void Input::set_action(Action action, bool down) {
-    current_[static_cast<std::uint32_t>(action)] = down;
+    if (down) {
+        press_action(action);
+    } else {
+        release_action(action);
+    }
+}
+
+void Input::press_action(Action action) {
+    current_[static_cast<std::uint32_t>(action)] = true;
+
+    if (action == Action::MoveLeft) {
+        horizontal_priority_ = -1;
+    } else if (action == Action::MoveRight) {
+        horizontal_priority_ = 1;
+    }
+}
+
+void Input::release_action(Action action) {
+    current_[static_cast<std::uint32_t>(action)] = false;
+
+    if (action == Action::MoveLeft && horizontal_priority_ == -1) {
+        horizontal_priority_ = down(Action::MoveRight) ? 1 : 0;
+    } else if (action == Action::MoveRight && horizontal_priority_ == 1) {
+        horizontal_priority_ = down(Action::MoveLeft) ? -1 : 0;
+    }
 }
 
 bool Input::down(Action action) const {
@@ -25,17 +49,22 @@ bool Input::released(Action action) const {
 }
 
 float Input::axis_move_x() const {
-    float value = 0.0f;
+    const bool left = down(Action::MoveLeft);
+    const bool right = down(Action::MoveRight);
 
-    if (down(Action::MoveLeft)) {
-        value -= 1.0f;
+    if (left && right) {
+        return static_cast<float>(horizontal_priority_);
     }
 
-    if (down(Action::MoveRight)) {
-        value += 1.0f;
+    if (left) {
+        return -1.0f;
     }
 
-    return value;
+    if (right) {
+        return 1.0f;
+    }
+
+    return 0.0f;
 }
 
 }
