@@ -58,8 +58,8 @@
             },
             {
               "__identifier": "Hazard",
-              "__grid": [9, 10],
-              "px": [152, 168],
+              "__grid": [3, 10],
+              "px": [56, 168],
               "width": 48,
               "height": 16,
               "fieldInstances": []
