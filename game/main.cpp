@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     pf::TextureHandle player_texture = renderer.create_debug_texture_16x16();
 
     std::printf("Window and renderer created successfully.\n");
-    std::printf("Milestone 3.5: Platformer feel tuning.\n");
+    std::printf("Milestone 3.5a: Input responsiveness fix.\n");
     std::printf("Entering main loop...\n");
 
     constexpr float fixed_dt = 1.0f / 60.0f;
@@ -83,9 +83,9 @@ int main(int argc, char** argv) {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             }
-        }
 
-        pf::update_input_from_sdl_keyboard(input);
+            pf::handle_sdl_input_event(input, event);
+        }
 
         if (input.pressed(pf::Action::Quit)) {
             running = false;
@@ -96,13 +96,30 @@ int main(int argc, char** argv) {
             const float target_vx = move_x * tuning.max_run_speed;
 
             const bool has_input = move_x != 0.0f;
+            const bool turning =
+                has_input &&
+                player.vx != 0.0f &&
+                ((move_x > 0.0f && player.vx < 0.0f) ||
+                 (move_x < 0.0f && player.vx > 0.0f));
 
             float accel = 0.0f;
 
             if (player.grounded) {
-                accel = has_input ? tuning.ground_accel : tuning.ground_decel;
+                if (!has_input) {
+                    accel = tuning.ground_decel;
+                } else if (turning) {
+                    accel = tuning.ground_turn_accel;
+                } else {
+                    accel = tuning.ground_accel;
+                }
             } else {
-                accel = has_input ? tuning.air_accel : tuning.air_decel;
+                if (!has_input) {
+                    accel = tuning.air_decel;
+                } else if (turning) {
+                    accel = tuning.air_turn_accel;
+                } else {
+                    accel = tuning.air_accel;
+                }
             }
 
             player.vx = approach(
