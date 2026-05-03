@@ -1,4 +1,4 @@
-# Pixel Engine
+# PixaForge Engine
 
 一个专门用于 2D 像素风闯关游戏的轻量高性能运行时。
 
@@ -14,7 +14,7 @@
 ## 项目结构
 
 ```
-pixel_engine/
+PixaForge/
 ├─ engine/          引擎核心
 │  ├─ core/         基础设施（类型、数学、日志）
 │  ├─ platform/     平台抽象（SDL3）
